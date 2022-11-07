@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Chat Example</title>
+<script type="text/javascript">
+window.onload = function () {
+    var ws;
+    var log = document.getElementById("log");
+
+    const msgTypeOnline = 1      // 上线
+    const msgTypeOffline = 2     // 离线
+    const msgTypePrivateChat = 3 // 私聊
+    const msgTypePublicChat = 4  // 群聊
+
+    const uid = Date.parse( new Date()).toString();
+    const roomId = "10086";
+    const userName = "张三"+uid
+
+    function appendLog(item) {
+        var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+        log.appendChild(item);
+        if (doScroll) {
+            log.scrollTop = log.scrollHeight - log.clientHeight;
+        }
+    }
+
+    document.getElementById("sendPrivate").onclick = function () {
+        if (!ws) {
+            return false;
+        }
+        var msg = document.getElementById("privateMsg").value.toString()
+        var toUid = document.getElementById("toUid").value.toString()
+        let data = JSON.stringify({
+            "status": msgTypePrivateChat,
+            "data": {
+                "uid": uid,
+                "roomId": roomId,
+                "userName": userName,
+                "toUid": toUid,
+                "msg": msg,
+            }
+        })
+        ws.send(data)
+        return false;
+    };
+
+    document.getElementById("sendPublic").onclick = function () {
+        if (!ws) {
+            return false;
+        }
+        var msg = document.getElementById("publicMsg").value.toString()
+        let data = JSON.stringify({
+            "status": msgTypePublicChat,
+            "data": {
+                "uid": uid,
+                "roomId": roomId,
+                "userName": userName,
+                "msg": msg,
+            }
+        })
+        ws.send(data)
+        return false;
+    };
+
+    if (window["WebSocket"]) {
+        ws = new WebSocket("ws://localhost:8080/ws");
+        ws.onclose = function (evt) {
+            let data = JSON.stringify({
+                "status": msgTypeOffline,
+                "data": {
+                    "uid": uid,
+                    "roomId": roomId,
+                    "userName": userName,
+                }
+            })
+            ws.send(data)
+            var item = document.createElement("div");
+            item.innerHTML = "<b>断开连接</b>";
+            appendLog(item);
+        };
+        ws.onopen = function (evt) {
+            let data = JSON.stringify({
+                "status": msgTypeOnline,
+                "data": {
+                    "uid": uid,
+                    "roomId": roomId,
+                    "userName": userName,
+                }
+            })
+            ws.send(data)
+        };
+        ws.onmessage = function (evt) {
+            console.log(evt)
+            var receivedMsg = JSON.parse(evt.data);
+            console.log(receivedMsg);
+            switch (receivedMsg.status) {
+                case msgTypeOnline:
+                    msg = receivedMsg.data.userName + "进入房间"
+                    break;
+                case msgTypeOffline:
+                    msg = receivedMsg.data.userName + "退出房间"
+                    break;
+                case msgTypePrivateChat:
+                    if(receivedMsg.data.uid == uid){
+                        msg = "您私聊" + receivedMsg.data.userName + "："+receivedMsg.data.msg 
+                    }
+                    else {
+                        msg = receivedMsg.data.userName + "私聊您："+receivedMsg.data.msg 
+                    }
+                    break;
+                case msgTypePublicChat:
+                    msg = receivedMsg.data.userName + "："+receivedMsg.data.msg 
+                    break;
+                default:
+                    break;
+            }
+            var messages = msg.split('\n');
+            for (var i = 0; i < messages.length; i++) {
+                var item = document.createElement("div");
+                item.innerText = messages[i];
+                appendLog(item);
+            }
+        };
+    } else {
+        var item = document.createElement("div");
+        item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+        appendLog(item);
+    }
+
+    document.getElementById("login").onclick = function(){
+        var uid = document.getElementById("uid").value.toString()
+        var userName = document.getElementById("userName").value.toString()
+        var roomId = document.getElementById("roomId").value.toString()
+    }
+};
+</script>
+<style type="text/css">
+html {
+    overflow: hidden;
+}
+
+body {
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: gray;
+}
+
+#log {
+    background: white;
+    margin: 0;
+    padding: 0.5em 0.5em 0.5em 0.5em;
+    position: absolute;
+    top: 0.5em;
+    left: 0.5em;
+    right: 0.5em;
+    bottom: 10em;
+    overflow: auto;
+}
+
+#form {
+    padding: 0 0.5em 0 0.5em;
+    margin: 0;
+    position: absolute;
+    bottom: 1em;
+    left: 0px;
+    width: 100%;
+    overflow: hidden;
+}
+
+</style>
+</head>
+<body>
+<div id="log"></div>
+<form id="form">
+    <input placeholder="uid" id="uid">
+    <input placeholder="userName" id="userName">
+    <input placeholder="roomId" id="roomId">
+    <input type="submit" id="login" value="登录" />
+    <br><br><br>
+    <input type="text" placeholder="群聊信息" id="publicMsg" size="64" autofocus />
+    <input type="submit" id="sendPublic" value="发送群聊" />
+    <br>
+    <input placeholder="私聊用户id" id="toUid">
+    <input type="text" placeholder="私聊信息" id="privateMsg" size="64">
+    <input type="submit" id="sendPrivate" value="发送私聊" />    
+</form>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "start:dev": "webpack serve --open --config webpack.config.js"
+  },
+  "dependencies": {
+    "agora-rtm-sdk": "^1.6.0-204",
+    "webpack": "5.28.0",
+    "webpack-dev-server": "3.11.2"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "webpack-cli": "^4.10.0"
+  }
+}
